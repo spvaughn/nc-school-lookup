@@ -310,6 +310,43 @@
     font-size:14px;
   }
 
+  .roster-section{
+    margin-top:28px;
+    padding-top:20px;
+    border-top:1px dashed var(--line);
+  }
+  .roster-section h3{
+    font-family:'Source Serif 4',serif;
+    font-size:15.5px;
+    margin:0 0 4px;
+  }
+  ul.roster-list{
+    list-style:none;
+    margin:14px 0 0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .roster-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+    font-size:13px;
+    padding:6px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .roster-row-dupe{ opacity:0.55; }
+  .roster-name{ font-weight:600; }
+  .roster-addr{ color:var(--ink-soft); font-size:12px; }
+  .roster-flag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--pine);
+    margin-left:auto;
+  }
+
   @media (prefers-reduced-motion: no-preference){
     .school-card, .locator-card { transition: transform 0.12s ease; }
   }
@@ -420,18 +457,207 @@ function normalizeCounty(raw){
   return raw.toLowerCase().replace(/\s*county\s*$/i, '').trim();
 }
 
+// Comprehensive name-match safety net for the six counties, sourced from:
+// - NCDPI/EDDIE Charter School Report (Aug 2025) for every charter school
+// - NCES Public/Private School Search (county-filtered) for addresses
+// Matching is substring, case-insensitive. This exists because OSM frequently tags
+// charter schools operator:type=public (they legally are) without a charter flag,
+// and many private schools use names (Ravenscroft, Cary Academy, Saint Mary's...)
+// that don't contain an obvious "private" keyword for the name-heuristic fallback.
+const KNOWN_CHARTERS = [
+  // Wake
+  'exploris school', 'magellan charter', 'sterling montessori', 'franklin academy',
+  'east wake academy', 'raleigh charter high', 'preeminent charter', 'quest academy',
+  'southern wake academy', 'casa esperanza montessori', 'endeavor charter',
+  'triangle math and science academy', 'tmsa', 'longleaf school of the arts',
+  'wake forest charter academy', 'cardinal charter academy', 'envision science academy',
+  'rise southeast raleigh', 'central wake high', 'peak charter academy',
+  'pine springs preparatory', 'rolesville charter academy', 'carolina charter academy',
+  'raleigh oak charter', 'doral academy of north carolina', 'math and science academy of apex',
+  // Durham
+  'north carolina cyber academy', 'nc virtual academy', 'maureen joy charter',
+  'durham charter school', 'community school of digital', 'kestrel heights',
+  'research triangle charter', 'central park school for children', 'voyager academy',
+  'global scholars academy', 'research triangle high', 'reaching all minds academy',
+  'excelsior classical academy', 'kipp durham', 'discovery charter', 'north oak academy',
+  'institute development young leaders',
+  // Chatham
+  'chatham charter', 'woods charter', 'willow oak montessori',
+  // Harnett
+  'anderson creek academy', 'achievement charter academy',
+  // Johnston
+  'neuse charter school', 'johnston charter academy', 'american leadership academy',
+  // Lee
+  'ascend leadership academy', 'ascend leadership remote academy', 'rising leaders academy',
+  'central carolina academy'
+];
+
+const KNOWN_PRIVATE = [
+  // Wake / Raleigh-Cary area
+  'ravenscroft', 'cary academy', "saint mary's school", "st. mary's school",
+  'cardinal gibbons', 'trinity academy of raleigh', 'wake christian academy',
+  'cary christian school', 'thales academy', 'hilltop christian school',
+  'southern wake montessori', 'new school montessori', "st. david's school",
+  "st. mary magdalene", "st. michael the archangel", "st. catherine of siena",
+  "st. timothy's school", "st. thomas more", 'word of god christian academy',
+  'the raleigh school', 'fusion academy', 'follow the child montessori',
+  'friendship christian school', 'sacred heart cathedral', 'resurrection lutheran',
+  'triangle montessori academy', 'trillium montessori', 'trilogy school',
+  'wake forest montessori', 'franciscan', 'al-iman school', 'atlas international school',
+  'chesterbrook academy', 'bonner academy', 'fletcher academy',
+  // Durham
+  'durham academy', 'duke school', 'trinity school of durham', 'carolina friends school',
+  'immaculata catholic school', 'bethesda christian academy', 'cresset christian academy',
+  'cristo rey research triangle', 'durham nativity school', 'liberty christian school',
+  'montessori community school', 'montessori school of durham', 'montessori farm school',
+  'triangle day school', 'hill learning center', "lerner jewish community day school",
+  'international montessori school', 'gorman christian academy', 'mount zion christian academy',
+  'veritas collaborative school', "quality education institute", 'empowered minds academy',
+  'fellowship baptist academy', 'five oaks',
+  // Chatham
+  'haw river christian academy', 'community independent school', 'emerson waldorf',
+  // Lee
+  'lee christian school', 'grace christian school',
+  // Harnett
+  'cape fear christian academy', 'faith education academy', 'velos classical',
+  'brookside christian academy',
+  // Johnston
+  'star christian academy'
+];
+
 function categorize(tags){
   tags = tags || {};
   const name = (tags.name || '').toLowerCase();
+  const operator = (tags.operator || '').toLowerCase();
+
+  if(KNOWN_CHARTERS.some(k => name.includes(k))) return 'charter';
+  if(KNOWN_PRIVATE.some(k => name.includes(k))) return 'private';
   if((tags['school:type'] || '').toLowerCase() === 'charter') return 'charter';
   if((tags['school:type'] || '').toLowerCase() === 'magnet' || name.includes('magnet')) return 'magnet';
   if((tags['operator:type'] || '').toLowerCase() === 'private' || tags.fee === 'yes' || tags.fee === 'discount' ) return 'private';
-  if((tags['operator:type'] || '').toLowerCase() === 'public') return 'public';
-  const operator = (tags.operator || '').toLowerCase();
-  if(operator.includes('county schools') || operator.includes('public schools') || operator.includes('board of education')) return 'public';
+  if(/charter/.test(name)) return 'charter';
   if(/christian|catholic|montessori|academy|day school|preparatory|friends school/i.test(name)) return 'private';
+
+  // Fallback exclusion for ordinary district schools. Safe to rely on operator:type=public
+  // here (unlike before) because every charter school we know of in these six counties is
+  // already caught by KNOWN_CHARTERS above -- this only catches the ones we don't know about
+  // AND that OSM tags as public, which is a much smaller and more acceptable risk than
+  // letting every untagged traditional public school leak into these results.
+  if((tags['operator:type'] || '').toLowerCase() === 'public') return 'public';
+  if(operator.includes('county schools') || operator.includes('public schools') || operator.includes('board of education') || operator.includes('school district')) return 'public';
   return 'unspecified';
 }
+
+// Static reference roster (name + best-known address + type), sourced the same way as
+// KNOWN_CHARTERS/KNOWN_PRIVATE above. Shown as a fallback list per county because some of
+// these schools simply aren't in OpenStreetMap at all -- no amount of re-tagging logic can
+// surface a school with zero OSM presence, so this guarantees visibility by name instead.
+const COUNTY_ROSTER = {
+  wake: [
+    { name: 'The Exploris School', address: '401 Hillsborough St, Raleigh', type: 'charter' },
+    { name: 'Magellan Charter', address: 'Raleigh', type: 'charter' },
+    { name: 'Sterling Montessori Academy', address: '202 Treybrooke Dr, Morrisville', type: 'charter' },
+    { name: 'Franklin Academy', address: 'Wake Forest', type: 'charter' },
+    { name: 'East Wake Academy', address: 'Zebulon', type: 'charter' },
+    { name: 'Raleigh Charter High School', address: 'Raleigh', type: 'charter' },
+    { name: 'PreEminent Charter', address: 'Wake Forest', type: 'charter' },
+    { name: 'Quest Academy', address: 'Raleigh', type: 'charter' },
+    { name: 'Southern Wake Academy', address: '5108 Old Powell Rd, Holly Springs', type: 'charter' },
+    { name: 'Casa Esperanza Montessori Charter School', address: 'Wake County', type: 'charter' },
+    { name: 'Endeavor Charter School', address: 'Wake County', type: 'charter' },
+    { name: 'Triangle Math and Science Academy (TMSA)', address: 'Cary', type: 'charter' },
+    { name: 'Longleaf School of the Arts', address: '322 Chapanoke Rd, Raleigh', type: 'charter' },
+    { name: 'Wake Forest Charter Academy', address: 'Wake Forest', type: 'charter' },
+    { name: 'Cardinal Charter Academy', address: 'Wake County', type: 'charter' },
+    { name: 'Envision Science Academy', address: 'Wake Forest', type: 'charter' },
+    { name: 'RISE Southeast Raleigh Charter School', address: 'Raleigh', type: 'charter' },
+    { name: 'Central Wake High', address: 'Wake County', type: 'charter' },
+    { name: 'Peak Charter Academy', address: 'Wake County', type: 'charter' },
+    { name: 'Pine Springs Preparatory Academy', address: '220 Rosewood Centre Dr, Holly Springs', type: 'charter' },
+    { name: 'Rolesville Charter Academy', address: 'Rolesville', type: 'charter' },
+    { name: 'Carolina Charter Academy', address: 'Angier', type: 'charter' },
+    { name: 'Raleigh Oak Charter', address: 'Raleigh', type: 'charter' },
+    { name: 'Doral Academy of North Carolina', address: 'Wake County', type: 'charter' },
+    { name: 'The Math and Science Academy of Apex', address: 'Apex', type: 'charter' },
+    { name: 'Ravenscroft', address: '7409 Falls of Neuse Rd, Raleigh', type: 'private' },
+    { name: 'Cary Academy', address: '1500 N Harrison Ave, Cary', type: 'private' },
+    { name: "Saint Mary's School", address: '900 Hillsborough St, Raleigh', type: 'private' },
+    { name: 'Cardinal Gibbons High School', address: '1401 Edwards Mill Rd, Raleigh', type: 'private' },
+    { name: 'Trinity Academy of Raleigh', address: '10224 Baileywick Rd, Raleigh', type: 'private' },
+    { name: 'Wake Christian Academy', address: '5500 Wake Academy Dr, Raleigh', type: 'private' },
+    { name: 'Cary Christian School', address: '1330 Old Apex Rd, Cary', type: 'private' },
+    { name: 'Thales Academy (multiple Wake campuses)', address: 'Apex / Raleigh / Rolesville / Wake Forest', type: 'private' },
+    { name: 'Hilltop Christian School', address: '5309 Umstead Rd, Fuquay-Varina', type: 'private' },
+    { name: 'Southern Wake Montessori', address: '5108 Old Powell Rd, Holly Springs', type: 'private' },
+    { name: 'New School Montessori Center', address: '5617 Sunset Lake Rd, Holly Springs', type: 'private' },
+    { name: "St. Mary Magdalene Catholic School", address: '625 Magdala Pl, Apex', type: 'private' },
+    { name: "St. Michael the Archangel Catholic School", address: '810 High House Rd, Cary', type: 'private' },
+    { name: "St. Catherine of Siena Catholic School", address: '520 W Holding Ave, Wake Forest', type: 'private' },
+    { name: "St. David's School", address: '3400 White Oak Rd, Raleigh', type: 'private' },
+    { name: 'Word of God Christian Academy', address: '3000 Rock Quarry Rd, Raleigh', type: 'private' }
+  ],
+  durham: [
+    { name: 'North Carolina Cyber Academy', address: 'Durham', type: 'charter' },
+    { name: 'NC Virtual Academy', address: 'Durham', type: 'charter' },
+    { name: 'Maureen Joy Charter School', address: 'Durham', type: 'charter' },
+    { name: 'Durham Charter School', address: 'Durham', type: 'charter' },
+    { name: 'Community School of Digital & Visual Art', address: 'Durham', type: 'charter' },
+    { name: 'Kestrel Heights School', address: 'Durham', type: 'charter' },
+    { name: 'Research Triangle Charter', address: 'Durham', type: 'charter' },
+    { name: 'Central Park School for Children', address: '724 Foster St, Durham', type: 'charter' },
+    { name: 'Voyager Academy', address: 'Durham', type: 'charter' },
+    { name: 'Global Scholars Academy', address: '311 Dowd St, Durham', type: 'charter' },
+    { name: 'Research Triangle High School', address: 'Durham', type: 'charter' },
+    { name: 'The Institute Development Young Leaders', address: 'Durham', type: 'charter' },
+    { name: 'Reaching All Minds Academy', address: 'Durham', type: 'charter' },
+    { name: 'Excelsior Classical Academy', address: 'Durham', type: 'charter' },
+    { name: 'KIPP Durham College Preparatory', address: 'Durham', type: 'charter' },
+    { name: 'Discovery Charter', address: 'Durham', type: 'charter' },
+    { name: 'North Oak Academy', address: 'Durham', type: 'charter' },
+    { name: 'Durham Academy', address: '3601 Ridge Rd, Durham', type: 'private' },
+    { name: 'Duke School', address: '3716 Erwin Rd, Durham', type: 'private' },
+    { name: 'Trinity School of Durham & Chapel Hill', address: '4011 Pickett Rd, Durham', type: 'private' },
+    { name: 'Carolina Friends School', address: '4809 Friends School Rd, Durham', type: 'private' },
+    { name: 'Immaculata Catholic School', address: '721 Burch Ave, Durham', type: 'private' },
+    { name: 'Bethesda Christian Academy', address: '1914 S Miami Blvd, Durham', type: 'private' },
+    { name: 'Cresset Christian Academy', address: '3707 Garrett Rd, Durham', type: 'private' },
+    { name: 'Durham Nativity School', address: '1004 N Mangum St, Durham', type: 'private' },
+    { name: 'Liberty Christian School', address: '3864 Guess Rd, Durham', type: 'private' },
+    { name: 'Montessori Community School', address: '4512 Pope Rd, Durham', type: 'private' },
+    { name: 'Montessori School of Durham', address: '2800 Pickett Rd, Durham', type: 'private' },
+    { name: 'Triangle Day School', address: '4911 Neal Rd, Durham', type: 'private' },
+    { name: 'Hill Learning Center', address: '3200 Pickett Rd, Durham', type: 'private' },
+    { name: "Lerner Jewish Community Day School", address: '1935 W Cornwallis Rd, Durham', type: 'private' },
+    { name: 'International Montessori School', address: '3001 Academy Rd, Durham', type: 'private' }
+  ],
+  chatham: [
+    { name: 'Chatham Charter', address: '2200 Hamp Stone Rd, Siler City', type: 'charter' },
+    { name: 'Woods Charter', address: '160 Woodland Grove Ln, Chapel Hill', type: 'charter' },
+    { name: 'Willow Oak Montessori', address: '50101 Governors Dr, Chapel Hill', type: 'charter' },
+    { name: 'Haw River Christian Academy', address: 'North of Pittsboro', type: 'private' },
+    { name: 'Community Independent School', address: '2089 Lamont Norwood Rd, Pittsboro', type: 'private' }
+  ],
+  lee: [
+    { name: 'Ascend Leadership Academy: Lee County', address: 'Lee County', type: 'charter' },
+    { name: 'Rising Leaders Academy', address: 'Lee County', type: 'charter' },
+    { name: 'Central Carolina Academy', address: 'Lee County', type: 'charter' },
+    { name: 'Lee Christian School', address: '3220 Keller Andrews Rd, Sanford', type: 'private' },
+    { name: 'Grace Christian School', address: 'Sanford', type: 'private' }
+  ],
+  harnett: [
+    { name: 'Anderson Creek Academy', address: 'Harnett County', type: 'charter' },
+    { name: 'Achievement Charter Academy', address: '25 Buttonwood Ct, Fuquay-Varina', type: 'charter' },
+    { name: 'Cape Fear Christian Academy', address: 'Erwin', type: 'private' },
+    { name: 'Faith Education Academy', address: '2082 Arrowhead Rd, Dunn', type: 'private' },
+    { name: 'Velos Classical Christian School', address: 'Lillington', type: 'private' }
+  ],
+  johnston: [
+    { name: 'Neuse Charter School', address: 'Johnston County', type: 'charter' },
+    { name: 'Johnston Charter Academy', address: 'Johnston County', type: 'charter' },
+    { name: 'American Leadership Academy - Johnston', address: 'Johnston County', type: 'charter' },
+    { name: 'Star Christian Academy', address: 'Smithfield / Kenly', type: 'private' }
+  ]
+};
 
 const GRADE_WORDS = { 'pk':-1,'prek':-1,'pre-k':-1,'preschool':-1,'ecc':-1,'k':0,'kg':0,'kdg':0,'kindergarten':0 };
 
@@ -614,6 +840,32 @@ function renderSchoolList(schools, reportCardUrl){
   return `<ul class="school-list">${items}</ul>`;
 }
 
+function renderRosterSection(countyKey, liveSchoolNames){
+  const roster = COUNTY_ROSTER[countyKey];
+  if(!roster || !roster.length) return '';
+
+  const seen = new Set(liveSchoolNames.map(n => n.toLowerCase()));
+  const badgeClass = { charter:'badge-charter', private:'badge-private' };
+  const badgeLabel = { charter:'Charter', private:'Private' };
+
+  const rows = roster.map(s => {
+    const alreadyShown = seen.has(s.name.toLowerCase());
+    return `<li class="roster-row${alreadyShown ? ' roster-row-dupe' : ''}">
+      <span class="sc-badge ${badgeClass[s.type]}">${badgeLabel[s.type]}</span>
+      <span class="roster-name">${s.name}</span>
+      <span class="roster-addr">${s.address}</span>
+      ${alreadyShown ? '<span class="roster-flag">also shown above ↑</span>' : ''}
+    </li>`;
+  }).join('');
+
+  return `
+    <div class="roster-section">
+      <h3>Full ${COUNTY_INFO[countyKey] ? COUNTY_INFO[countyKey].label : countyKey} charter &amp; notable private-school roster</h3>
+      <div class="band-sub">Sourced from NCDPI/EDDIE charter records and NCES school directories, not the live map above. No distance shown here since these aren't geocoded -- this list exists so a school missing from OpenStreetMap entirely doesn't go unseen. Small home-based private schools and daycares are not comprehensively covered.</div>
+      <ul class="roster-list">${rows}</ul>
+    </div>`;
+}
+
 const BAND_META = {
   elementary: { title: 'Elementary', sub: 'Grades roughly PK/K–5' },
   middle:     { title: 'Middle', sub: 'Grades roughly 6–8' },
@@ -718,6 +970,7 @@ async function runSearch(){
             </div>
           </div>
         ` : `<div class="empty">No private, charter, or magnet schools tagged within ${RADIUS_MILES} miles in OpenStreetMap. Try the NCDPI directories linked below, or widen the search by trying a nearby cross-street.</div>`}
+        ${countyKey && COUNTY_ROSTER[countyKey] ? renderRosterSection(countyKey, schools.map(s => s.name)) : ''}
         <div class="note">
           "Check state rating" opens NC's official School Report Cards filtered to this county — search the school name there for its current performance grade. NC does not issue state performance grades for private schools. For a fuller private-school list, see the
           <a href="https://www.dpi.nc.gov/students-families/nc-non-public-schools" target="_blank" rel="noopener">NC Division of Non-Public Education directory</a>, and for charter schools, the
