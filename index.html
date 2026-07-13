@@ -202,6 +202,33 @@
   }
   .radial-svg{ flex-shrink:0; }
 
+  .band-columns{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:22px;
+    flex:1;
+    min-width:280px;
+  }
+  .band-section h3{
+    font-family:'Source Serif 4',serif;
+    font-size:15.5px;
+    margin:0 0 2px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .band-section .band-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:400;
+  }
+  .band-section .band-sub{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+
   .legend{
     display:flex;
     gap:16px;
@@ -218,8 +245,6 @@
     display:flex;
     flex-direction:column;
     gap:10px;
-    flex:1;
-    min-width:280px;
   }
   .school-card{
     background:var(--paper-raised);
@@ -361,7 +386,7 @@ const COUNTY_INFO = {
 
 const RADIUS_MILES = 12;
 const RADIUS_METERS = RADIUS_MILES * 1609.34;
-const MAX_RESULTS = 25;
+const MAX_RESULTS = 40;
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $('status');
@@ -406,6 +431,66 @@ function categorize(tags){
   if(operator.includes('county schools') || operator.includes('public schools') || operator.includes('board of education')) return 'public';
   if(/christian|catholic|montessori|academy|day school|preparatory|friends school/i.test(name)) return 'private';
   return 'unspecified';
+}
+
+const GRADE_WORDS = { 'pk':-1,'prek':-1,'pre-k':-1,'preschool':-1,'ecc':-1,'k':0,'kg':0,'kdg':0,'kindergarten':0 };
+
+function gradeToNum(token){
+  token = token.trim().toLowerCase();
+  if(token in GRADE_WORDS) return GRADE_WORDS[token];
+  const n = parseInt(token, 10);
+  return isNaN(n) ? null : n;
+}
+
+// Parses free-text grade ranges like "PK-8", "K-5", "9-12", "6th-8th" into a lo/hi numeric pair.
+function parseGradeRange(str){
+  if(!str) return null;
+  const cleaned = str.replace(/(st|nd|rd|th)\b/gi, '').trim();
+  const parts = cleaned.split(/\s*(?:-|–|—|to|through)\s*/i).filter(Boolean);
+  if(!parts.length) return null;
+  const lo = gradeToNum(parts[0]);
+  const hi = parts.length > 1 ? gradeToNum(parts[parts.length - 1]) : lo;
+  if(lo === null || hi === null) return null;
+  return lo <= hi ? [lo, hi] : [hi, lo];
+}
+
+// Returns a Set of grade bands ('elementary' | 'middle' | 'high') a school overlaps.
+// Order of preference: explicit grades tag > ISCED level tag > name heuristics.
+function parseGradeBands(tags){
+  tags = tags || {};
+  const bands = new Set();
+
+  const range = parseGradeRange(tags.grades || tags['grades:from'] && `${tags['grades:from']}-${tags['grades:to'] || tags['grades:from']}`);
+  if(range){
+    const [lo, hi] = range;
+    if(lo <= 5 && hi >= -1) bands.add('elementary');
+    if(lo <= 8 && hi >= 6) bands.add('middle');
+    if(lo <= 12 && hi >= 9) bands.add('high');
+    if(bands.size) return bands;
+  }
+
+  const isced = tags['isced:level'];
+  if(isced){
+    isced.split(';').map(s => s.trim()).forEach(level => {
+      if(level === '1') bands.add('elementary');
+      if(level === '2') bands.add('middle');
+      if(level === '3') bands.add('high');
+    });
+    if(bands.size) return bands;
+  }
+
+  const name = (tags.name || '').toLowerCase();
+  if(/elementary/.test(name)) bands.add('elementary');
+  if(/middle/.test(name)) bands.add('middle');
+  if(/\bhigh\b/.test(name)) bands.add('high');
+
+  return bands;
+}
+
+function gradeLabel(tags){
+  return tags.grades || tags['grades:from']
+    ? (tags.grades || `${tags['grades:from']}–${tags['grades:to'] || tags['grades:from']}`)
+    : null;
 }
 
 function formatAddress(tags, fallbackLat, fallbackLon){
@@ -508,7 +593,7 @@ window.copyAddr = copyAddr;
 
 function renderSchoolList(schools, reportCardUrl){
   if(!schools.length){
-    return `<div class="empty">No private, charter, or magnet schools tagged within ${RADIUS_MILES} miles in OpenStreetMap. Try the NCDPI directories linked below, or widen the search by trying a nearby cross-street.</div>`;
+    return `<div class="empty">None found in this band within ${RADIUS_MILES} miles.</div>`;
   }
   const badgeClass = { charter:'badge-charter', private:'badge-private', magnet:'badge-magnet', unspecified:'badge-unspecified' };
   const badgeLabel = { charter:'Charter', private:'Private', magnet:'Magnet', unspecified:'Unlabeled' };
@@ -518,7 +603,7 @@ function renderSchoolList(schools, reportCardUrl){
       <div class="sc-main">
         <span class="sc-badge ${badgeClass[s.category]}">${badgeLabel[s.category]}</span>
         <strong>${s.name}</strong>
-        <div class="addr">${s.address}</div>
+        <div class="addr">${s.address}${s.gradeText ? ` · Grades ${s.gradeText}` : ''}</div>
       </div>
       <div class="sc-side">
         <div class="dist">${s.distance.toFixed(1)} mi</div>
@@ -527,6 +612,24 @@ function renderSchoolList(schools, reportCardUrl){
     </li>`).join('');
 
   return `<ul class="school-list">${items}</ul>`;
+}
+
+const BAND_META = {
+  elementary: { title: 'Elementary', sub: 'Grades roughly PK/K–5' },
+  middle:     { title: 'Middle', sub: 'Grades roughly 6–8' },
+  high:       { title: 'High', sub: 'Grades roughly 9–12' },
+  unspecified:{ title: 'Grade level not listed', sub: 'Present in OpenStreetMap without grade data — confirm directly with the school' }
+};
+
+function renderBandSection(bandKey, schoolsInBand, reportCardUrl){
+  const meta = BAND_META[bandKey];
+  const sorted = [...schoolsInBand].sort((a,b) => a.distance - b.distance);
+  return `
+    <div class="band-section">
+      <h3>${meta.title} <span class="band-count">${sorted.length}</span></h3>
+      <div class="band-sub">${meta.sub}</div>
+      ${renderSchoolList(sorted, reportCardUrl)}
+    </div>`;
 }
 
 async function runSearch(){
@@ -563,12 +666,23 @@ async function runSearch(){
           category,
           distance,
           bearing,
-          address: formatAddress(tags, loc[0], loc[1])
+          address: formatAddress(tags, loc[0], loc[1]),
+          bands: parseGradeBands(tags),
+          gradeText: gradeLabel(tags)
         };
       })
       .filter(Boolean)
       .sort((a,b) => a.distance - b.distance)
       .slice(0, MAX_RESULTS);
+
+    const byBand = { elementary: [], middle: [], high: [], unspecified: [] };
+    schools.forEach(s => {
+      if(s.bands.size === 0){
+        byBand.unspecified.push(s);
+      }else{
+        s.bands.forEach(b => byBand[b].push(s));
+      }
+    });
 
     const reportCardUrl = info ? info.reportCardUrl : 'https://ncreports.ondemand.sas.com/src/';
 
@@ -586,17 +700,24 @@ async function runSearch(){
 
       <section class="parcel">
         <h2>Nearby private, charter & magnet schools</h2>
-        <div class="sub">Within ${RADIUS_MILES} miles, sorted by distance. Category is read from OpenStreetMap tagging and may be incomplete.</div>
+        <div class="sub">Within ${RADIUS_MILES} miles, grouped by grade level. A school spanning multiple levels (e.g. K–8) appears in each band it covers. Category and grade range are read from OpenStreetMap tagging and may be incomplete.</div>
         <div class="legend">
           <span><i class="dot" style="background:#3A5A6B"></i>Charter</span>
           <span><i class="dot" style="background:#9C4A32"></i>Private</span>
           <span><i class="dot" style="background:#3E6B4E"></i>Magnet</span>
           <span><i class="dot" style="background:#4A5C50"></i>Unlabeled</span>
         </div>
-        <div class="radial-wrap">
-          ${renderRadial(lat, lon, schools)}
-          ${renderSchoolList(schools, reportCardUrl)}
-        </div>
+        ${schools.length ? `
+          <div class="radial-wrap">
+            ${renderRadial(lat, lon, schools)}
+            <div class="band-columns">
+              ${renderBandSection('elementary', byBand.elementary, reportCardUrl)}
+              ${renderBandSection('middle', byBand.middle, reportCardUrl)}
+              ${renderBandSection('high', byBand.high, reportCardUrl)}
+              ${byBand.unspecified.length ? renderBandSection('unspecified', byBand.unspecified, reportCardUrl) : ''}
+            </div>
+          </div>
+        ` : `<div class="empty">No private, charter, or magnet schools tagged within ${RADIUS_MILES} miles in OpenStreetMap. Try the NCDPI directories linked below, or widen the search by trying a nearby cross-street.</div>`}
         <div class="note">
           "Check state rating" opens NC's official School Report Cards filtered to this county — search the school name there for its current performance grade. NC does not issue state performance grades for private schools. For a fuller private-school list, see the
           <a href="https://www.dpi.nc.gov/students-families/nc-non-public-schools" target="_blank" rel="noopener">NC Division of Non-Public Education directory</a>, and for charter schools, the
