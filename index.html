@@ -272,6 +272,49 @@
   .badge-private{ background:var(--brick); }
   .badge-magnet{ background:var(--pine); }
   .badge-unspecified{ background:var(--ink-soft); }
+  .badge-public{ background:#5B6B78; }
+
+  .closest-highlight{
+    margin-bottom:22px;
+  }
+  .closest-highlight h3{
+    font-family:'Source Serif 4',serif;
+    font-size:15px;
+    margin:0 0 10px;
+  }
+  .closest-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:12px;
+  }
+  .closest-card{
+    background:var(--paper-raised);
+    border:1px solid var(--brass);
+    border-radius:2px;
+    padding:14px 16px;
+    position:relative;
+  }
+  .closest-card strong{ display:block; font-size:14.5px; margin:6px 0 2px; }
+  .closest-card .closest-dist{
+    position:absolute;
+    top:14px; right:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--brass-dark);
+    font-weight:600;
+  }
+  .closest-card .addr{ font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .closest-card a{ font-size:11.5px; color:var(--slate); text-decoration:none; }
+  .closest-card a:hover{ text-decoration:underline; }
+  .closest-card-empty{
+    border-style:dashed;
+    color:var(--ink-soft);
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border-color:var(--line);
+  }
   .school-card .sc-side{
     text-align:right;
     flex-shrink:0;
@@ -554,108 +597,109 @@ function categorize(tags){
 // surface a school with zero OSM presence, so this guarantees visibility by name instead.
 const COUNTY_ROSTER = {
   wake: [
-    { name: 'The Exploris School', address: '401 Hillsborough St, Raleigh', type: 'charter' },
-    { name: 'Magellan Charter', address: 'Raleigh', type: 'charter' },
-    { name: 'Sterling Montessori Academy', address: '202 Treybrooke Dr, Morrisville', type: 'charter' },
-    { name: 'Franklin Academy', address: 'Wake Forest', type: 'charter' },
-    { name: 'East Wake Academy', address: 'Zebulon', type: 'charter' },
-    { name: 'Raleigh Charter High School', address: 'Raleigh', type: 'charter' },
-    { name: 'PreEminent Charter', address: 'Wake Forest', type: 'charter' },
-    { name: 'Quest Academy', address: 'Raleigh', type: 'charter' },
-    { name: 'Southern Wake Academy', address: '5108 Old Powell Rd, Holly Springs', type: 'charter' },
-    { name: 'Casa Esperanza Montessori Charter School', address: 'Wake County', type: 'charter' },
-    { name: 'Endeavor Charter School', address: 'Wake County', type: 'charter' },
-    { name: 'Triangle Math and Science Academy (TMSA)', address: 'Cary', type: 'charter' },
-    { name: 'Longleaf School of the Arts', address: '322 Chapanoke Rd, Raleigh', type: 'charter' },
-    { name: 'Wake Forest Charter Academy', address: 'Wake Forest', type: 'charter' },
-    { name: 'Cardinal Charter Academy', address: 'Wake County', type: 'charter' },
-    { name: 'Envision Science Academy', address: 'Wake Forest', type: 'charter' },
-    { name: 'RISE Southeast Raleigh Charter School', address: 'Raleigh', type: 'charter' },
-    { name: 'Central Wake High', address: 'Wake County', type: 'charter' },
-    { name: 'Peak Charter Academy', address: 'Wake County', type: 'charter' },
-    { name: 'Pine Springs Preparatory Academy', address: '220 Rosewood Centre Dr, Holly Springs', type: 'charter' },
-    { name: 'Rolesville Charter Academy', address: 'Rolesville', type: 'charter' },
-    { name: 'Carolina Charter Academy', address: 'Angier', type: 'charter' },
-    { name: 'Raleigh Oak Charter', address: 'Raleigh', type: 'charter' },
-    { name: 'Doral Academy of North Carolina', address: 'Wake County', type: 'charter' },
-    { name: 'The Math and Science Academy of Apex', address: 'Apex', type: 'charter' },
-    { name: 'Ravenscroft', address: '7409 Falls of Neuse Rd, Raleigh', type: 'private' },
-    { name: 'Cary Academy', address: '1500 N Harrison Ave, Cary', type: 'private' },
-    { name: "Saint Mary's School", address: '900 Hillsborough St, Raleigh', type: 'private' },
-    { name: 'Cardinal Gibbons High School', address: '1401 Edwards Mill Rd, Raleigh', type: 'private' },
-    { name: 'Trinity Academy of Raleigh', address: '10224 Baileywick Rd, Raleigh', type: 'private' },
-    { name: 'Wake Christian Academy', address: '5500 Wake Academy Dr, Raleigh', type: 'private' },
-    { name: 'Cary Christian School', address: '1330 Old Apex Rd, Cary', type: 'private' },
+    { name: 'The Exploris School', address: '401 Hillsborough St, Raleigh, NC 27603', type: 'charter' },
+    { name: 'Magellan Charter', address: '9324 Baileywick Rd, Raleigh, NC 27615', type: 'charter' },
+    { name: 'Sterling Montessori Academy', address: '202 Treybrooke Dr, Morrisville, NC 27560', type: 'charter' },
+    { name: 'Franklin Academy', address: '1127 Chalk Rd, Wake Forest, NC 27587', type: 'charter' },
+    { name: 'East Wake Academy', address: '821 Charter School Way, Zebulon, NC 27597', type: 'charter' },
+    { name: 'Raleigh Charter High School', address: '1307 Glenwood Ave, Raleigh, NC 27605', type: 'charter' },
+    { name: 'PreEminent Charter School', address: '3815 Rock Quarry Rd, Raleigh, NC 27610', type: 'charter' },
+    { name: 'Quest Academy', address: '10908 Strickland Rd, Raleigh, NC 27615', type: 'charter' },
+    { name: 'Southern Wake Academy', address: '5108 Old Powell Rd, Holly Springs, NC 27540', type: 'charter' },
+    { name: 'Casa Esperanza Montessori Charter School', address: '10510 Star Rd, Wake Forest, NC 27587', type: 'charter' },
+    { name: 'Endeavor Charter School', address: '4879 One World Way, Wake Forest, NC 27587', type: 'charter' },
+    { name: 'Triangle Math and Science Academy (TMSA)', address: '312 Gregson Dr, Cary, NC 27511', type: 'charter' },
+    { name: 'Longleaf School of the Arts', address: '322 Chapanoke Rd, Raleigh, NC 27603', type: 'charter' },
+    { name: 'Wake Forest Charter Academy', address: '1851 Friendship Chapel Rd, Wake Forest, NC 27587', type: 'charter' },
+    { name: 'Cardinal Charter Academy', address: '1020 St. Charles Pl, Cary, NC 27513', type: 'charter' },
+    { name: 'Cardinal Charter Academy at Wendell Falls', address: '6041 Taylor Rd, Wendell, NC 27591', type: 'charter' },
+    { name: 'Envision Science Academy', address: '590 Traditions Grande Blvd, Wake Forest, NC 27587', type: 'charter' },
+    { name: 'RISE Southeast Raleigh Charter School', address: '3420 Idlewood Village Dr, Raleigh, NC 27610', type: 'charter' },
+    { name: 'Central Wake High (Charter)', address: '1425 Rock Quarry Rd, Raleigh, NC 27610', type: 'charter' },
+    { name: 'Peak Charter Academy', address: '1601 Orchard Villas Ave, Apex, NC 27502', type: 'charter' },
+    { name: 'Pine Springs Preparatory Academy', address: '220 Rosewood Centre Dr, Holly Springs, NC 27540', type: 'charter' },
+    { name: 'Rolesville Charter Academy', address: '908 Eagle Scholars Dr, Rolesville, NC 27571', type: 'charter' },
+    { name: 'Carolina Charter Academy', address: '8529 NC Highway 55, Angier, NC 27501', type: 'charter' },
+    { name: 'Raleigh Oak Charter School', address: '2600 Sumer Dr, Raleigh, NC 27615', type: 'charter' },
+    { name: 'Doral Academy of North Carolina', address: '7000 Destiny Dr, Raleigh, NC 27604', type: 'charter' },
+    { name: 'The Math and Science Academy of Apex', address: '3501 Dropseed Dr, Apex, NC 27502', type: 'charter' },
+    { name: 'Ravenscroft', address: '7409 Falls of Neuse Rd, Raleigh, NC 27615', type: 'private' },
+    { name: 'Cary Academy', address: '1500 N Harrison Ave, Cary, NC 27513', type: 'private' },
+    { name: "Saint Mary's School", address: '900 Hillsborough St, Raleigh, NC 27603', type: 'private' },
+    { name: 'Cardinal Gibbons High School', address: '1401 Edwards Mill Rd, Raleigh, NC 27607', type: 'private' },
+    { name: 'Trinity Academy of Raleigh', address: '10224 Baileywick Rd, Raleigh, NC 27613', type: 'private' },
+    { name: 'Wake Christian Academy', address: '5500 Wake Academy Dr, Raleigh, NC 27603', type: 'private' },
+    { name: 'Cary Christian School', address: '1330 Old Apex Rd, Cary, NC 27513', type: 'private' },
     { name: 'Thales Academy (multiple Wake campuses)', address: 'Apex / Raleigh / Rolesville / Wake Forest', type: 'private' },
-    { name: 'Hilltop Christian School', address: '5309 Umstead Rd, Fuquay-Varina', type: 'private' },
-    { name: 'Southern Wake Montessori', address: '5108 Old Powell Rd, Holly Springs', type: 'private' },
-    { name: 'New School Montessori Center', address: '5617 Sunset Lake Rd, Holly Springs', type: 'private' },
-    { name: "St. Mary Magdalene Catholic School", address: '625 Magdala Pl, Apex', type: 'private' },
-    { name: "St. Michael the Archangel Catholic School", address: '810 High House Rd, Cary', type: 'private' },
-    { name: "St. Catherine of Siena Catholic School", address: '520 W Holding Ave, Wake Forest', type: 'private' },
-    { name: "St. David's School", address: '3400 White Oak Rd, Raleigh', type: 'private' },
-    { name: 'Word of God Christian Academy', address: '3000 Rock Quarry Rd, Raleigh', type: 'private' }
+    { name: 'Hilltop Christian School', address: '5309 Umstead Rd, Fuquay-Varina, NC 27526', type: 'private' },
+    { name: 'Southern Wake Montessori', address: '5108 Old Powell Rd, Holly Springs, NC 27540', type: 'private' },
+    { name: 'New School Montessori Center', address: '5617 Sunset Lake Rd, Holly Springs, NC 27540', type: 'private' },
+    { name: "St. Mary Magdalene Catholic School", address: '625 Magdala Pl, Apex, NC 27502', type: 'private' },
+    { name: "St. Michael the Archangel Catholic School", address: '810 High House Rd, Cary, NC 27513', type: 'private' },
+    { name: "St. Catherine of Siena Catholic School", address: '520 W Holding Ave, Wake Forest, NC 27587', type: 'private' },
+    { name: "St. David's School", address: '3400 White Oak Rd, Raleigh, NC 27609', type: 'private' },
+    { name: 'Word of God Christian Academy', address: '3000 Rock Quarry Rd, Raleigh, NC 27610', type: 'private' }
   ],
   durham: [
-    { name: 'North Carolina Cyber Academy', address: 'Durham', type: 'charter' },
-    { name: 'NC Virtual Academy', address: 'Durham', type: 'charter' },
-    { name: 'Maureen Joy Charter School', address: 'Durham', type: 'charter' },
-    { name: 'Durham Charter School', address: 'Durham', type: 'charter' },
-    { name: 'Community School of Digital & Visual Art', address: 'Durham', type: 'charter' },
-    { name: 'Kestrel Heights School', address: 'Durham', type: 'charter' },
-    { name: 'Research Triangle Charter', address: 'Durham', type: 'charter' },
-    { name: 'Central Park School for Children', address: '724 Foster St, Durham', type: 'charter' },
-    { name: 'Voyager Academy', address: 'Durham', type: 'charter' },
-    { name: 'Global Scholars Academy', address: '311 Dowd St, Durham', type: 'charter' },
-    { name: 'Research Triangle High School', address: 'Durham', type: 'charter' },
-    { name: 'The Institute Development Young Leaders', address: 'Durham', type: 'charter' },
-    { name: 'Reaching All Minds Academy', address: 'Durham', type: 'charter' },
-    { name: 'Excelsior Classical Academy', address: 'Durham', type: 'charter' },
-    { name: 'KIPP Durham College Preparatory', address: 'Durham', type: 'charter' },
-    { name: 'Discovery Charter', address: 'Durham', type: 'charter' },
-    { name: 'North Oak Academy', address: 'Durham', type: 'charter' },
-    { name: 'Durham Academy', address: '3601 Ridge Rd, Durham', type: 'private' },
-    { name: 'Duke School', address: '3716 Erwin Rd, Durham', type: 'private' },
-    { name: 'Trinity School of Durham & Chapel Hill', address: '4011 Pickett Rd, Durham', type: 'private' },
-    { name: 'Carolina Friends School', address: '4809 Friends School Rd, Durham', type: 'private' },
-    { name: 'Immaculata Catholic School', address: '721 Burch Ave, Durham', type: 'private' },
-    { name: 'Bethesda Christian Academy', address: '1914 S Miami Blvd, Durham', type: 'private' },
-    { name: 'Cresset Christian Academy', address: '3707 Garrett Rd, Durham', type: 'private' },
-    { name: 'Durham Nativity School', address: '1004 N Mangum St, Durham', type: 'private' },
-    { name: 'Liberty Christian School', address: '3864 Guess Rd, Durham', type: 'private' },
-    { name: 'Montessori Community School', address: '4512 Pope Rd, Durham', type: 'private' },
-    { name: 'Montessori School of Durham', address: '2800 Pickett Rd, Durham', type: 'private' },
-    { name: 'Triangle Day School', address: '4911 Neal Rd, Durham', type: 'private' },
-    { name: 'Hill Learning Center', address: '3200 Pickett Rd, Durham', type: 'private' },
-    { name: "Lerner Jewish Community Day School", address: '1935 W Cornwallis Rd, Durham', type: 'private' },
-    { name: 'International Montessori School', address: '3001 Academy Rd, Durham', type: 'private' }
+    { name: 'North Carolina Cyber Academy', address: '2800 Meridian Pkwy Ste 150, Durham, NC 27713 (statewide virtual)', type: 'charter' },
+    { name: 'NC Virtual Academy', address: '4220 NC Highway 55, Durham, NC 27713 (statewide virtual)', type: 'charter' },
+    { name: 'Maureen Joy Charter School', address: '107 S Driver St, Durham, NC 27703', type: 'charter' },
+    { name: 'Durham Charter School', address: '4621 Kemp Rd, Durham, NC 27703', type: 'charter' },
+    { name: 'Community School of Digital & Visual Arts', address: 'Durham, NC', type: 'charter' },
+    { name: 'Kestrel Heights School', address: '4700 South Alston Ave, Durham, NC 27713', type: 'charter' },
+    { name: 'Research Triangle Charter', address: '2418 Ellis Rd, Durham, NC 27703', type: 'charter' },
+    { name: 'Central Park School for Children', address: '724 Foster St, Durham, NC 27701', type: 'charter' },
+    { name: 'Voyager Academy', address: '101 Hock Parc Ln, Durham, NC', type: 'charter' },
+    { name: 'Global Scholars Academy', address: '311 Dowd St, Durham, NC 27701', type: 'charter' },
+    { name: 'Research Triangle High School', address: '3106 NC-54, Durham, NC 27713', type: 'charter' },
+    { name: 'The Institute Development Young Leaders', address: '4300 S Miami Blvd, Durham, NC 27703', type: 'charter' },
+    { name: 'Reaching All Minds Academy', address: '2703 Holloway St, Durham, NC 27703', type: 'charter' },
+    { name: 'Excelsior Classical Academy', address: '4100 N Roxboro St, Durham, NC 27704', type: 'charter' },
+    { name: 'KIPP Durham College Preparatory', address: '1107 Holloway St, Durham, NC 27701', type: 'charter' },
+    { name: 'Discovery Charter School', address: 'Durham, NC 27722', type: 'charter' },
+    { name: 'North Oak Academy', address: 'Durham, NC', type: 'charter' },
+    { name: 'Durham Academy', address: '3601 Ridge Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Duke School', address: '3716 Erwin Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Trinity School of Durham & Chapel Hill', address: '4011 Pickett Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Carolina Friends School', address: '4809 Friends School Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Immaculata Catholic School', address: '721 Burch Ave, Durham, NC 27701', type: 'private' },
+    { name: 'Bethesda Christian Academy', address: '1914 S Miami Blvd, Durham, NC 27703', type: 'private' },
+    { name: 'Cresset Christian Academy', address: '3707 Garrett Rd, Durham, NC 27707', type: 'private' },
+    { name: 'Durham Nativity School', address: '1004 N Mangum St, Durham, NC 27278', type: 'private' },
+    { name: 'Liberty Christian School', address: '3864 Guess Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Montessori Community School', address: '4512 Pope Rd, Durham, NC 27707', type: 'private' },
+    { name: 'Montessori School of Durham', address: '2800 Pickett Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Triangle Day School', address: '4911 Neal Rd, Durham, NC 27705', type: 'private' },
+    { name: 'Hill Learning Center', address: '3200 Pickett Rd, Durham, NC 27705', type: 'private' },
+    { name: "Lerner Jewish Community Day School", address: '1935 W Cornwallis Rd, Durham, NC 27705', type: 'private' },
+    { name: 'International Montessori School', address: '3001 Academy Rd Ste 300, Durham, NC 27707', type: 'private' }
   ],
   chatham: [
-    { name: 'Chatham Charter', address: '2200 Hamp Stone Rd, Siler City', type: 'charter' },
-    { name: 'Woods Charter', address: '160 Woodland Grove Ln, Chapel Hill', type: 'charter' },
-    { name: 'Willow Oak Montessori', address: '50101 Governors Dr, Chapel Hill', type: 'charter' },
-    { name: 'Haw River Christian Academy', address: 'North of Pittsboro', type: 'private' },
-    { name: 'Community Independent School', address: '2089 Lamont Norwood Rd, Pittsboro', type: 'private' }
+    { name: 'Chatham Charter', address: '2200 Hamp Stone Rd, Siler City, NC 27344', type: 'charter' },
+    { name: 'Woods Charter', address: '160 Woodland Grove Ln, Chapel Hill, NC 27516', type: 'charter' },
+    { name: 'Willow Oak Montessori', address: '50101 Governors Dr, Chapel Hill, NC 27517', type: 'charter' },
+    { name: 'Haw River Christian Academy', address: 'North of Pittsboro, NC', type: 'private' },
+    { name: 'Community Independent School', address: '2089 Lamont Norwood Rd, Pittsboro, NC 27312', type: 'private' }
   ],
   lee: [
-    { name: 'Ascend Leadership Academy: Lee County', address: 'Lee County', type: 'charter' },
-    { name: 'Rising Leaders Academy', address: 'Lee County', type: 'charter' },
-    { name: 'Central Carolina Academy', address: 'Lee County', type: 'charter' },
-    { name: 'Lee Christian School', address: '3220 Keller Andrews Rd, Sanford', type: 'private' },
-    { name: 'Grace Christian School', address: 'Sanford', type: 'private' }
+    { name: 'Ascend Leadership Academy: Lee County', address: '283 Harvey Faulk Rd, Sanford, NC 27332', type: 'charter' },
+    { name: 'Rising Leaders Academy (MINA Charter School of Lee County)', address: '2732 Industrial Dr, Sanford, NC 27332', type: 'charter' },
+    { name: 'Central Carolina Academy', address: '1801 Douglas Dr, Sanford, NC 27330', type: 'charter' },
+    { name: 'Lee Christian School', address: '3220 Keller Andrews Rd, Sanford, NC 27330', type: 'private' },
+    { name: 'Grace Christian School', address: 'Sanford, NC', type: 'private' }
   ],
   harnett: [
-    { name: 'Anderson Creek Academy', address: 'Harnett County', type: 'charter' },
-    { name: 'Achievement Charter Academy', address: '25 Buttonwood Ct, Fuquay-Varina', type: 'charter' },
-    { name: 'Cape Fear Christian Academy', address: 'Erwin', type: 'private' },
-    { name: 'Faith Education Academy', address: '2082 Arrowhead Rd, Dunn', type: 'private' },
-    { name: 'Velos Classical Christian School', address: 'Lillington', type: 'private' }
+    { name: 'Anderson Creek Academy', address: '4940 Ray Rd, Spring Lake, NC 28390', type: 'charter' },
+    { name: 'Achievement Charter Academy', address: '25 Buttonwood Ct, Fuquay-Varina, NC 27526', type: 'charter' },
+    { name: 'Cape Fear Christian Academy', address: 'Erwin, NC', type: 'private' },
+    { name: 'Faith Education Academy', address: '2082 Arrowhead Rd, Dunn, NC 28334', type: 'private' },
+    { name: 'Velos Classical Christian School', address: 'Lillington, NC', type: 'private' }
   ],
   johnston: [
-    { name: 'Neuse Charter School', address: 'Johnston County', type: 'charter' },
-    { name: 'Johnston Charter Academy', address: 'Johnston County', type: 'charter' },
-    { name: 'American Leadership Academy - Johnston', address: 'Johnston County', type: 'charter' },
-    { name: 'Star Christian Academy', address: 'Smithfield / Kenly', type: 'private' }
+    { name: 'Neuse Charter School', address: '909 M. Durwood Stephenson Pkwy, Smithfield, NC 27577', type: 'charter' },
+    { name: 'Johnston Charter Academy', address: '40 Scholar Dr, Clayton, NC 27527', type: 'charter' },
+    { name: 'American Leadership Academy - Johnston', address: 'Johnston County, NC', type: 'charter' },
+    { name: 'Star Christian Academy', address: 'Smithfield / Kenly, NC', type: 'private' }
   ]
 };
 
@@ -866,6 +910,50 @@ function renderRosterSection(countyKey, liveSchoolNames){
     </div>`;
 }
 
+function renderClosestHighlight(closestCharter, closestPrivate, reportCardUrl){
+  if(!closestCharter && !closestPrivate) return '';
+  const card = (label, badgeClass, s) => s ? `
+    <div class="closest-card">
+      <span class="sc-badge ${badgeClass}">${label}</span>
+      <strong>${s.name}</strong>
+      <span class="closest-dist">${s.distance.toFixed(1)} mi</span>
+      <div class="addr">${s.address}${s.gradeText ? ` · Grades ${s.gradeText}` : ''}</div>
+      <a href="${reportCardUrl}" target="_blank" rel="noopener">Check state rating ↗</a>
+    </div>` : `
+    <div class="closest-card closest-card-empty">
+      <span class="sc-badge ${badgeClass}">${label}</span>
+      <span>None found within ${RADIUS_MILES} mi</span>
+    </div>`;
+  return `
+    <div class="closest-highlight">
+      <h3>Closest match</h3>
+      <div class="closest-row">
+        ${card('Closest Charter', 'badge-charter', closestCharter)}
+        ${card('Closest Private', 'badge-private', closestPrivate)}
+      </div>
+    </div>`;
+}
+
+function renderPublicBandSection(bandKey, schoolsInBand, reportCardUrl){
+  const meta = BAND_META[bandKey];
+  if(!schoolsInBand.length){
+    return `<div class="band-section"><h3>${meta.title} <span class="band-count">0</span></h3><div class="empty">None found within ${RADIUS_MILES} mi.</div></div>`;
+  }
+  const items = schoolsInBand.map(s => `
+    <li class="school-card">
+      <div class="sc-main">
+        <span class="sc-badge badge-public">Public</span>
+        <strong>${s.name}</strong>
+        <div class="addr">${s.address}${s.gradeText ? ` · Grades ${s.gradeText}` : ''}</div>
+      </div>
+      <div class="sc-side">
+        <div class="dist">${s.distance.toFixed(1)} mi</div>
+        <a href="${reportCardUrl}" target="_blank" rel="noopener">Check state rating ↗</a>
+      </div>
+    </li>`).join('');
+  return `<div class="band-section"><h3>${meta.title} <span class="band-count">${schoolsInBand.length}</span></h3><ul class="school-list">${items}</ul></div>`;
+}
+
 const BAND_META = {
   elementary: { title: 'Elementary', sub: 'Grades roughly PK/K–5' },
   middle:     { title: 'Middle', sub: 'Grades roughly 6–8' },
@@ -904,13 +992,12 @@ async function runSearch(){
     setStatus('Searching OpenStreetMap for nearby private, charter & magnet schools…');
     const elements = await fetchNearbySchools(lat, lon);
 
-    const schools = elements
+    const allElements = elements
       .map(el => {
         const loc = schoolLatLon(el);
         if(!loc) return null;
         const tags = el.tags || {};
         const category = categorize(tags);
-        if(category === 'public') return null;
         const distance = haversineMiles(lat, lon, loc[0], loc[1]);
         const bearing = bearingDeg(lat, lon, loc[0], loc[1]);
         return {
@@ -927,6 +1014,9 @@ async function runSearch(){
       .sort((a,b) => a.distance - b.distance)
       .slice(0, MAX_RESULTS);
 
+    const schools = allElements.filter(s => s.category !== 'public');
+    const publicOnly = allElements.filter(s => s.category === 'public');
+
     const byBand = { elementary: [], middle: [], high: [], unspecified: [] };
     schools.forEach(s => {
       if(s.bands.size === 0){
@@ -935,6 +1025,20 @@ async function runSearch(){
         s.bands.forEach(b => byBand[b].push(s));
       }
     });
+
+    // Traditional public schools, capped at 5 per band -- these exist to give context
+    // around base-school assignment (which can vary between traditional and year-round
+    // calendar tracks), not to replace the official district locator above.
+    const PUBLIC_CAP = 5;
+    const publicByBand = { elementary: [], middle: [], high: [] };
+    publicOnly.forEach(s => {
+      s.bands.forEach(b => {
+        if(publicByBand[b] && publicByBand[b].length < PUBLIC_CAP) publicByBand[b].push(s);
+      });
+    });
+
+    const closestCharter = schools.filter(s => s.category === 'charter').sort((a,b) => a.distance - b.distance)[0];
+    const closestPrivate = schools.filter(s => s.category === 'private').sort((a,b) => a.distance - b.distance)[0];
 
     const reportCardUrl = info ? info.reportCardUrl : 'https://ncreports.ondemand.sas.com/src/';
 
@@ -948,11 +1052,18 @@ async function runSearch(){
         <h2>Districted (base) school</h2>
         <div class="sub">Attendance-zone assignment comes from the district's own system — this links you straight to it.</div>
         ${renderLocatorCard(countyKey, geo.display_name)}
+        <div class="band-sub" style="margin-top:14px;">Nearby traditional public schools (up to 5 per level) — useful context since base assignment can shift between traditional and year-round calendar tracks, or when boundaries are redrawn. This is not a substitute for the official locator above.</div>
+        <div class="band-columns" style="margin-top:10px;">
+          ${renderPublicBandSection('elementary', publicByBand.elementary, reportCardUrl)}
+          ${renderPublicBandSection('middle', publicByBand.middle, reportCardUrl)}
+          ${renderPublicBandSection('high', publicByBand.high, reportCardUrl)}
+        </div>
       </section>
 
       <section class="parcel">
         <h2>Nearby private, charter & magnet schools</h2>
         <div class="sub">Within ${RADIUS_MILES} miles, grouped by grade level. A school spanning multiple levels (e.g. K–8) appears in each band it covers. Category and grade range are read from OpenStreetMap tagging and may be incomplete.</div>
+        ${renderClosestHighlight(closestCharter, closestPrivate, reportCardUrl)}
         <div class="legend">
           <span><i class="dot" style="background:#3A5A6B"></i>Charter</span>
           <span><i class="dot" style="background:#9C4A32"></i>Private</span>
