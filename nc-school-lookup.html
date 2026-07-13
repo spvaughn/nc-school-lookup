@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NC School Lookup — Wake, Chatham, Lee, Harnett, Durham & Johnston</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper:#EDF1E9;
+    --paper-raised:#F7F9F4;
+    --ink:#1B2E22;
+    --ink-soft:#4A5C50;
+    --line:#C7D1C0;
+    --brass:#B8862E;
+    --brass-dark:#8f6a22;
+    --brick:#9C4A32;
+    --slate:#3A5A6B;
+    --pine:#3E6B4E;
+    --danger:#8a3324;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+  }
+
+  .sheet{
+    max-width:900px;
+    margin:0 auto;
+    padding:0 24px 80px;
+  }
+
+  header.titleblock{
+    border-bottom:3px double var(--ink);
+    padding:36px 0 20px;
+    margin-bottom:32px;
+  }
+  header.titleblock .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--brass-dark);
+  }
+  header.titleblock h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,40px);
+    margin:6px 0 8px;
+  }
+  header.titleblock p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:15px;
+    max-width:560px;
+  }
+
+  .county-strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 14px;
+    margin-top:14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .county-strip span::before{ content:"· "; color:var(--line); }
+  .county-strip span:first-child::before{ content:""; }
+
+  .search-block{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:22px;
+    margin-bottom:36px;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+  }
+  .search-row input{
+    flex:1;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .search-row input:focus{
+    outline:2px solid var(--brass);
+    outline-offset:1px;
+  }
+  .search-row button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:12px 22px;
+    border:none;
+    border-radius:2px;
+    background:var(--ink);
+    color:var(--paper-raised);
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .search-row button:hover{ background:var(--brass-dark); }
+  .search-row button:disabled{ background:var(--ink-soft); cursor:default; }
+
+  .hint{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:8px;
+  }
+
+  .status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:18px 0;
+    min-height:18px;
+  }
+  .status.error{ color:var(--danger); }
+
+  .result-address{
+    font-family:'Source Serif 4',serif;
+    font-size:19px;
+    margin-bottom:28px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .result-address .county-tag{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    background:var(--pine);
+    color:#fff;
+    padding:3px 8px;
+    border-radius:2px;
+    margin-left:10px;
+    vertical-align:middle;
+  }
+
+  section.parcel{
+    margin-bottom:38px;
+  }
+  section.parcel > h2{
+    font-family:'Source Serif 4',serif;
+    font-size:20px;
+    margin:0 0 4px;
+  }
+  section.parcel > .sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:16px;
+  }
+
+  .locator-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-left:4px solid var(--brass);
+    padding:18px 20px;
+    border-radius:2px;
+    flex-wrap:wrap;
+  }
+  .locator-card .lc-text strong{ display:block; font-size:15px; margin-bottom:3px; }
+  .locator-card .lc-text span{ font-size:13px; color:var(--ink-soft); }
+  .locator-card .lc-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:2px;
+    text-decoration:none;
+    display:inline-block;
+    cursor:pointer;
+    border:1px solid transparent;
+  }
+  .btn-primary{ background:var(--ink); color:var(--paper-raised); }
+  .btn-primary:hover{ background:var(--brass-dark); }
+  .btn-secondary{ background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .btn-secondary:hover{ border-color:var(--ink); }
+
+  .radial-wrap{
+    display:flex;
+    gap:28px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+  .radial-svg{ flex-shrink:0; }
+
+  .legend{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    font-size:12.5px;
+    margin:6px 0 18px;
+  }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+  ul.school-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+    min-width:280px;
+  }
+  .school-card{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .school-card .sc-main strong{ font-size:14.5px; display:block; }
+  .school-card .sc-main .addr{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .school-card .sc-badge{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    padding:2px 7px;
+    border-radius:2px;
+    color:#fff;
+    margin-right:6px;
+  }
+  .badge-charter{ background:var(--slate); }
+  .badge-private{ background:var(--brick); }
+  .badge-magnet{ background:var(--pine); }
+  .badge-unspecified{ background:var(--ink-soft); }
+  .school-card .sc-side{
+    text-align:right;
+    flex-shrink:0;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .school-card .sc-side .dist{ font-size:15px; font-weight:500; }
+  .school-card .sc-side a{ font-size:11.5px; color:var(--slate); text-decoration:none; display:block; margin-top:6px; }
+  .school-card .sc-side a:hover{ text-decoration:underline; }
+
+  .note{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    border-top:1px dashed var(--line);
+    padding-top:14px;
+    margin-top:8px;
+  }
+  .note a{ color:var(--slate); }
+
+  footer.colophon{
+    margin-top:60px;
+    padding-top:20px;
+    border-top:3px double var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .empty{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .school-card, .locator-card { transition: transform 0.12s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="titleblock">
+    <div class="eyebrow">Six-County Field Guide · Home Buying Reference</div>
+    <h1>NC School Lookup</h1>
+    <p>Enter an address to find its districted public school assignment and the nearest private, charter, and magnet alternatives.</p>
+    <div class="county-strip">
+      <span>Wake</span><span>Durham</span><span>Chatham</span><span>Lee</span><span>Harnett</span><span>Johnston</span>
+    </div>
+  </header>
+
+  <div class="search-block">
+    <div class="search-row">
+      <input id="addressInput" type="text" placeholder="e.g. 123 Main St, Cary, NC 27511" autocomplete="off" />
+      <button id="searchBtn">Find schools</button>
+    </div>
+    <div class="hint">Works best with a full street address, city, and zip. Geocoding via OpenStreetMap · nearby schools via OpenStreetMap contributor data.</div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="results"></div>
+
+  <footer class="colophon">
+    <span>Data: OpenStreetMap Nominatim &amp; Overpass, county GIS/student-assignment offices, NCDPI</span>
+    <span>Not an official record — verify with the district before relying on it</span>
+  </footer>
+</div>
+
+<script>
+const COUNTY_INFO = {
+  "wake": {
+    label: "Wake County",
+    locatorName: "WCPSS Base Attendance Areas Viewer",
+    locatorUrl: "https://osageo.wcpss.net/base-attendance-areas/",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Wake"
+  },
+  "durham": {
+    label: "Durham County",
+    locatorName: "Durham Public School Locator (City/County GIS)",
+    locatorUrl: "https://maps.durhamnc.gov/address/",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Durham"
+  },
+  "chatham": {
+    label: "Chatham County",
+    locatorName: "Chatham County Schools — School Assignment Locator",
+    locatorUrl: "https://www.chatham.k12.nc.us/o/ccs/page/school-assignment-locator",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Chatham"
+  },
+  "lee": {
+    label: "Lee County",
+    locatorName: "Lee County Schools — School Assignment Locator",
+    locatorUrl: "https://www.lee.k12.nc.us/Domain/2905",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Lee"
+  },
+  "harnett": {
+    label: "Harnett County",
+    locatorName: "Harnett County GIS School Locator",
+    locatorUrl: "https://gis.harnett.org/SchoolLocator/",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Harnett"
+  },
+  "johnston": {
+    label: "Johnston County",
+    locatorName: "JCPS WebQuery School Finder",
+    locatorUrl: "http://schoolquery.johnston.k12.nc.us/livewq/webquery/",
+    reportCardUrl: "https://ncreports.ondemand.sas.com/src/?county=Johnston"
+  }
+};
+
+const RADIUS_MILES = 12;
+const RADIUS_METERS = RADIUS_MILES * 1609.34;
+const MAX_RESULTS = 14;
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $('status');
+const resultsEl = $('results');
+
+function setStatus(msg, isError){
+  statusEl.textContent = msg || '';
+  statusEl.className = 'status' + (isError ? ' error' : '');
+}
+
+function haversineMiles(lat1, lon1, lat2, lon2){
+  const toRad = d => d * Math.PI / 180;
+  const R = 3958.8;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function bearingDeg(lat1, lon1, lat2, lon2){
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function normalizeCounty(raw){
+  if(!raw) return null;
+  return raw.toLowerCase().replace(/\s*county\s*$/i, '').trim();
+}
+
+function categorize(tags){
+  tags = tags || {};
+  const name = (tags.name || '').toLowerCase();
+  if((tags['school:type'] || '').toLowerCase() === 'charter') return 'charter';
+  if((tags['school:type'] || '').toLowerCase() === 'magnet' || name.includes('magnet')) return 'magnet';
+  if((tags['operator:type'] || '').toLowerCase() === 'private' || tags.fee === 'yes' || tags.fee === 'discount' ) return 'private';
+  if((tags['operator:type'] || '').toLowerCase() === 'public') return 'public';
+  const operator = (tags.operator || '').toLowerCase();
+  if(operator.includes('county schools') || operator.includes('public schools') || operator.includes('board of education')) return 'public';
+  if(/christian|catholic|montessori|academy|day school|preparatory|friends school/i.test(name)) return 'private';
+  return 'unspecified';
+}
+
+function formatAddress(tags, fallbackLat, fallbackLon){
+  const parts = [];
+  if(tags['addr:housenumber'] && tags['addr:street']) parts.push(`${tags['addr:housenumber']} ${tags['addr:street']}`);
+  else if(tags['addr:street']) parts.push(tags['addr:street']);
+  if(tags['addr:city']) parts.push(tags['addr:city']);
+  if(parts.length) return parts.join(', ');
+  return `~${fallbackLat.toFixed(4)}, ${fallbackLon.toFixed(4)}`;
+}
+
+async function geocode(address){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=us&q=${encodeURIComponent(address + ', North Carolina')}`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if(!res.ok) throw new Error('Geocoding service unavailable right now.');
+  const data = await res.json();
+  if(!data.length) throw new Error('Could not find that address. Try adding city and zip.');
+  return data[0];
+}
+
+async function fetchNearbySchools(lat, lon){
+  const query = `[out:json][timeout:25];(node["amenity"="school"](around:${RADIUS_METERS},${lat},${lon});way["amenity"="school"](around:${RADIUS_METERS},${lat},${lon}););out center tags;`;
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(query)
+  });
+  if(!res.ok) throw new Error('Nearby-school lookup is unavailable right now.');
+  const data = await res.json();
+  return data.elements || [];
+}
+
+function schoolLatLon(el){
+  if(el.type === 'node') return [el.lat, el.lon];
+  if(el.center) return [el.center.lat, el.center.lon];
+  return null;
+}
+
+function renderRadial(centerLat, centerLon, schools){
+  const size = 280, cx = size/2, cy = size/2, maxR = 118;
+  const maxDist = Math.max(1, ...schools.map(s => s.distance));
+  const colorFor = { charter:'#3A5A6B', private:'#9C4A32', magnet:'#3E6B4E', unspecified:'#4A5C50' };
+
+  let rings = '';
+  [0.33,0.66,1].forEach(f => {
+    rings += `<circle cx="${cx}" cy="${cy}" r="${maxR*f}" fill="none" stroke="#C7D1C0" stroke-width="1" stroke-dasharray="3 3"/>`;
+  });
+
+  let dots = '';
+  schools.forEach(s => {
+    const r = 24 + (s.distance / maxDist) * (maxR - 24);
+    const rad = (s.bearing - 90) * Math.PI / 180;
+    const x = cx + r * Math.cos(rad);
+    const y = cy + r * Math.sin(rad);
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${colorFor[s.category] || '#4A5C50'}" stroke="#F7F9F4" stroke-width="1.5"><title>${s.name}</title></circle>`;
+  });
+
+  return `
+  <svg class="radial-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Map of nearby schools relative to the address">
+    ${rings}
+    ${dots}
+    <circle cx="${cx}" cy="${cy}" r="6" fill="#B8862E" stroke="#1B2E22" stroke-width="1.5"/>
+    <text x="${cx}" y="${cy+22}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#4A5C50">your address</text>
+  </svg>`;
+}
+
+function renderLocatorCard(countyKey, addressLabel){
+  const info = COUNTY_INFO[countyKey];
+  if(!info){
+    return `<div class="locator-card">
+      <div class="lc-text">
+        <strong>No cataloged locator for this county</strong>
+        <span>This tool covers Wake, Durham, Chatham, Lee, Harnett &amp; Johnston. Try the statewide report card site to search by school name.</span>
+      </div>
+      <div class="lc-actions">
+        <a class="btn btn-primary" href="https://ncreports.ondemand.sas.com/src/" target="_blank" rel="noopener">Open NC School Report Cards</a>
+      </div>
+    </div>`;
+  }
+  return `<div class="locator-card">
+    <div class="lc-text">
+      <strong>${info.locatorName}</strong>
+      <span>Opens the official ${info.label} tool in a new tab — paste your address there to see the exact assigned school(s).</span>
+    </div>
+    <div class="lc-actions">
+      <button class="btn btn-secondary" onclick="copyAddr(this)" data-addr="${addressLabel.replace(/"/g,'&quot;')}">Copy address</button>
+      <a class="btn btn-primary" href="${info.locatorUrl}" target="_blank" rel="noopener">Open locator ↗</a>
+    </div>
+  </div>`;
+}
+
+function copyAddr(btn){
+  const addr = btn.getAttribute('data-addr');
+  navigator.clipboard.writeText(addr).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+window.copyAddr = copyAddr;
+
+function renderSchoolList(schools, reportCardUrl){
+  if(!schools.length){
+    return `<div class="empty">No private, charter, or magnet schools tagged within ${RADIUS_MILES} miles in OpenStreetMap. Try the NCDPI directories linked below, or widen the search by trying a nearby cross-street.</div>`;
+  }
+  const badgeClass = { charter:'badge-charter', private:'badge-private', magnet:'badge-magnet', unspecified:'badge-unspecified' };
+  const badgeLabel = { charter:'Charter', private:'Private', magnet:'Magnet', unspecified:'Unlabeled' };
+
+  const items = schools.map(s => `
+    <li class="school-card">
+      <div class="sc-main">
+        <span class="sc-badge ${badgeClass[s.category]}">${badgeLabel[s.category]}</span>
+        <strong>${s.name}</strong>
+        <div class="addr">${s.address}</div>
+      </div>
+      <div class="sc-side">
+        <div class="dist">${s.distance.toFixed(1)} mi</div>
+        <a href="${reportCardUrl}" target="_blank" rel="noopener">Check state rating ↗</a>
+      </div>
+    </li>`).join('');
+
+  return `<ul class="school-list">${items}</ul>`;
+}
+
+async function runSearch(){
+  const address = $('addressInput').value.trim();
+  if(!address){ setStatus('Enter an address first.', true); return; }
+
+  $('searchBtn').disabled = true;
+  resultsEl.innerHTML = '';
+  setStatus('Locating address…');
+
+  try{
+    const geo = await geocode(address);
+    const lat = parseFloat(geo.lat), lon = parseFloat(geo.lon);
+    const addr = geo.address || {};
+    const countyRaw = addr.county || addr.city || '';
+    const countyKey = normalizeCounty(countyRaw);
+    const info = COUNTY_INFO[countyKey];
+    const displayLabel = geo.display_name;
+
+    setStatus('Searching OpenStreetMap for nearby private, charter & magnet schools…');
+    const elements = await fetchNearbySchools(lat, lon);
+
+    const schools = elements
+      .map(el => {
+        const loc = schoolLatLon(el);
+        if(!loc) return null;
+        const tags = el.tags || {};
+        const category = categorize(tags);
+        if(category === 'public') return null;
+        const distance = haversineMiles(lat, lon, loc[0], loc[1]);
+        const bearing = bearingDeg(lat, lon, loc[0], loc[1]);
+        return {
+          name: tags.name || 'Unnamed school',
+          category,
+          distance,
+          bearing,
+          address: formatAddress(tags, loc[0], loc[1])
+        };
+      })
+      .filter(Boolean)
+      .sort((a,b) => a.distance - b.distance)
+      .slice(0, MAX_RESULTS);
+
+    const reportCardUrl = info ? info.reportCardUrl : 'https://ncreports.ondemand.sas.com/src/';
+
+    resultsEl.innerHTML = `
+      <div class="result-address">
+        ${displayLabel}
+        <span class="county-tag">${info ? info.label : (countyRaw || 'County not detected')}</span>
+      </div>
+
+      <section class="parcel">
+        <h2>Districted (base) school</h2>
+        <div class="sub">Attendance-zone assignment comes from the district's own system — this links you straight to it.</div>
+        ${renderLocatorCard(countyKey, geo.display_name)}
+      </section>
+
+      <section class="parcel">
+        <h2>Nearby private, charter & magnet schools</h2>
+        <div class="sub">Within ${RADIUS_MILES} miles, sorted by distance. Category is read from OpenStreetMap tagging and may be incomplete.</div>
+        <div class="legend">
+          <span><i class="dot" style="background:#3A5A6B"></i>Charter</span>
+          <span><i class="dot" style="background:#9C4A32"></i>Private</span>
+          <span><i class="dot" style="background:#3E6B4E"></i>Magnet</span>
+          <span><i class="dot" style="background:#4A5C50"></i>Unlabeled</span>
+        </div>
+        <div class="radial-wrap">
+          ${renderRadial(lat, lon, schools)}
+          ${renderSchoolList(schools, reportCardUrl)}
+        </div>
+        <div class="note">
+          "Check state rating" opens NC's official School Report Cards filtered to this county — search the school name there for its current performance grade. NC does not issue state performance grades for private schools. For a fuller private-school list, see the
+          <a href="https://www.dpi.nc.gov/students-families/nc-non-public-schools" target="_blank" rel="noopener">NC Division of Non-Public Education directory</a>, and for charter schools, the
+          <a href="https://www.dpi.nc.gov/students-families/alternative-choices/charter-schools/office-charter-schools-directory" target="_blank" rel="noopener">NC Office of Charter Schools directory</a>.
+        </div>
+      </section>
+    `;
+    setStatus('');
+  }catch(err){
+    setStatus(err.message || 'Something went wrong.', true);
+  }finally{
+    $('searchBtn').disabled = false;
+  }
+}
+
+$('searchBtn').addEventListener('click', runSearch);
+$('addressInput').addEventListener('keydown', e => { if(e.key === 'Enter') runSearch(); });
+</script>
+</body>
+</html>
